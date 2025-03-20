@@ -10,7 +10,7 @@
             margin: 0; 
             overflow: hidden; 
             font-family: 'Quicksand', sans-serif; 
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            background: url('chujek123.png') center/cover;
             background-size: cover;
             background-position: center;
             background-attachment: fixed;
@@ -19,7 +19,7 @@
             position: relative; 
             width: 100vw; 
             height: 100vh; 
-            background: url('https://images.unsplash.com/photo-1506744038136-46273834b3fb?ixlib=rb-1.2.1&auto=format&fit=crop&w=1950&q=80') center/cover;
+            background: url('chujek123.png') center/cover;
             filter: brightness(0.7);
         }
         canvas { 
@@ -210,6 +210,7 @@
             font-weight: 800;
             margin-bottom: 30px;
             background: linear-gradient(135deg, #fff, #e0e0e0);
+            background-clip: text;
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
@@ -408,6 +409,63 @@
         #player-nickname {
             display: none;
         }
+        .music-controls {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 15px;
+            border-radius: 10px;
+            display: none;  /* Changed from flex to none */
+            gap: 15px;
+            align-items: center;
+            color: white;
+            font-family: 'Quicksand', sans-serif;
+        }
+        .music-controls.visible {
+            display: flex;
+        }
+        .music-controls button {
+            background: none;
+            border: none;
+            color: white;
+            cursor: pointer;
+            font-size: 20px;
+            padding: 5px;
+            transition: transform 0.2s;
+        }
+        .music-controls button:hover {
+            transform: scale(1.1);
+        }
+        .volume-control {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .volume-slider {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100px;
+            height: 5px;
+            border-radius: 5px;
+            background: rgba(255, 255, 255, 0.3);
+            outline: none;
+        }
+        .volume-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            background: #4CAF50;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .volume-slider::-webkit-slider-thumb:hover {
+            background: #45a049;
+            transform: scale(1.1);
+        }
     </style>
 </head>
 <body>
@@ -463,6 +521,16 @@
             <ol id="leaderboard-list"></ol>
         </div>
         <div id="answer-feedback"></div>
+    </div>
+    <audio id="gameMusic" loop>
+        <source src="nowa era.mp3" type="audio/mpeg">
+    </audio>
+    <div class="music-controls">
+        <button id="toggleMusic" title="Toggle Music">🎵</button>
+        <div class="volume-control">
+            <input type="range" class="volume-slider" id="volumeSlider" min="0" max="100" value="50">
+            <span id="musicStatus">Music: On</span>
+        </div>
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -885,7 +953,7 @@
         const goldenFeatherTexture = createPlaceholderTexture('#FFD700', 32);
         
         const backgroundTextures = [
-            new THREE.TextureLoader().load('tlo.gif', function(texture) {
+            new THREE.TextureLoader().load('chujek123.png', function(texture) {
                 texture.wrapS = texture.wrapT = THREE.ClampToEdgeWrapping;
                 texture.magFilter = THREE.LinearFilter;
                 texture.minFilter = THREE.LinearFilter;
@@ -1089,6 +1157,10 @@
             
             // Update leaderboard
             updateLeaderboard();
+            if (!isMusicPlaying) {
+                initMusic();
+            }
+            hideMusicControls();
         }
 
         // Collision detection
@@ -1301,6 +1373,11 @@
             
             // Save score to leaderboard
             saveScore(gameState.score);
+            if (isMusicPlaying) {
+                fadeOutMusic();
+                isMusicPlaying = false;
+                document.getElementById('musicStatus').textContent = 'Music: Off';
+            }
         }
 
         // Save score to leaderboard
@@ -1886,6 +1963,7 @@
             document.getElementById('shield-active').style.display = 'none';
             document.getElementById('shield-timer').style.display = 'none';
             document.getElementById('shield-timer-fill').style.width = '0%';
+            showMusicControls();
         });
 
         // Handle window resize
@@ -1912,6 +1990,87 @@
             const textureLoader = new THREE.TextureLoader();
             playerMaterial.map = textureLoader.load(selectedCharacter);
             playerMaterial.needsUpdate = true;
+        }
+
+        // Add these variables at the top of your script
+        const gameMusic = document.getElementById('gameMusic');
+        let isMusicPlaying = false;
+        let currentVolume = 0.5; // Add this line to store current volume
+        
+        // Add music control functions
+        function initMusic() {
+            const volumeSlider = document.getElementById('volumeSlider');
+            currentVolume = volumeSlider.value / 100;
+            gameMusic.volume = currentVolume;
+            gameMusic.play()
+                .then(() => {
+                    isMusicPlaying = true;
+                    document.getElementById('musicStatus').textContent = 'Music: On';
+                })
+                .catch(err => {
+                    console.log('Music autoplay prevented:', err);
+                });
+        }
+
+        function fadeInMusic() {
+            gameMusic.volume = 0;
+            const targetVolume = currentVolume;
+            let vol = 0;
+            const interval = setInterval(() => {
+                if (vol < targetVolume) {
+                    vol += 0.01;
+                    gameMusic.volume = vol;
+                } else {
+                    clearInterval(interval);
+                }
+            }, 50);
+        }
+
+        function fadeOutMusic() {
+            let vol = gameMusic.volume;
+            const interval = setInterval(() => {
+                if (vol > 0) {
+                    vol -= 0.01;
+                    gameMusic.volume = vol;
+                } else {
+                    clearInterval(interval);
+                    gameMusic.pause();
+                }
+            }, 50);
+        }
+
+        // Add toggle music functionality
+        document.getElementById('toggleMusic').addEventListener('click', () => {
+            if (isMusicPlaying) {
+                fadeOutMusic();
+                isMusicPlaying = false;
+                document.getElementById('musicStatus').textContent = 'Music: Off';
+            } else {
+                gameMusic.play();
+                fadeInMusic();
+                isMusicPlaying = true;
+                document.getElementById('musicStatus').textContent = 'Music: On';
+            }
+        });
+
+        // Add volume slider functionality
+        document.getElementById('volumeSlider').addEventListener('input', (e) => {
+            currentVolume = e.target.value / 100;
+            if (isMusicPlaying) {
+                gameMusic.volume = currentVolume;
+            }
+        });
+
+        // Show music controls initially
+        showMusicControls();
+
+        // Update the music control functions
+        function showMusicControls() {
+            document.querySelector('.music-controls').classList.add('visible');
+        }
+
+        function hideMusicControls() {
+            document.querySelector('.music-controls').classList.remove('visible');
         }
     </script>
 </body>
