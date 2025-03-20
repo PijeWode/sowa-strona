@@ -1,0 +1,1918 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sowia Odyseja</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&family=Quicksand:wght@500;700&display=swap" rel="stylesheet">
+    <style>
+        body { 
+            margin: 0; 
+            overflow: hidden; 
+            font-family: 'Quicksand', sans-serif; 
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+        }
+        #game-container { 
+            position: relative; 
+            width: 100vw; 
+            height: 100vh; 
+            background: url('https://images.unsplash.com/photo-1506744038136-46273834b3fb?ixlib=rb-1.2.1&auto=format&fit=crop&w=1950&q=80') center/cover;
+            filter: brightness(0.7);
+        }
+        canvas { 
+            display: block; 
+            width: 100%; 
+            height: 100%; 
+        }
+        #ui-container { 
+            position: absolute; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%; 
+            pointer-events: none; 
+        }
+        #score-display { 
+            position: absolute; 
+            top: 20px; 
+            left: 20px; 
+            color: white; 
+            font-size: 28px; 
+            font-weight: 700;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            font-family: 'Poppins', sans-serif;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 10px 20px;
+            border-radius: 15px;
+            backdrop-filter: blur(5px);
+            display: none;
+        }
+        #trivia-container { 
+            position: absolute; 
+            top: 50%; 
+            left: 50%; 
+            transform: translate(-50%, -50%); 
+            background: rgba(0,0,0,0.85); 
+            color: white; 
+            padding: 35px; 
+            border-radius: 25px; 
+            width: 85%; 
+            max-width: 600px; 
+            text-align: center; 
+            display: none; 
+            pointer-events: auto;
+            box-shadow: 0 0 40px rgba(0,0,0,0.5);
+            backdrop-filter: blur(10px);
+        }
+        #trivia-question {
+            font-family: 'Poppins', sans-serif;
+            font-size: 28px;
+            margin-bottom: 35px;
+            line-height: 1.4;
+        }
+        #trivia-options {
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+            align-items: center;
+            margin: 25px 0;
+        }
+        .trivia-option { 
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            border: none; 
+            color: white; 
+            padding: 18px 35px; 
+            text-align: center; 
+            text-decoration: none; 
+            display: block; 
+            font-size: 18px; 
+            width: 75%;
+            max-width: 450px;
+            cursor: pointer; 
+            border-radius: 25px;
+            transition: all 0.3s;
+            font-family: 'Quicksand', sans-serif;
+            font-weight: 600;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        .trivia-option:hover { 
+            background: linear-gradient(135deg, #45a049, #3d8b40);
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+            width: 80%;
+        }
+        .trivia-option.correct { 
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            animation: pulse 0.5s; 
+            position: relative;
+            z-index: 1;
+        }
+        .trivia-option.incorrect { 
+            background: linear-gradient(135deg, #f44336, #d32f2f);
+            animation: shake 0.5s; 
+            position: relative;
+            z-index: 1;
+        }
+        #answer-feedback { 
+            position: absolute; 
+            top: 20%; 
+            left: 50%; 
+            transform: translate(-50%, -50%); 
+            font-size: 36px; 
+            font-weight: bold; 
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            display: none; 
+            pointer-events: none;
+            font-family: 'Poppins', sans-serif;
+            padding: 15px 30px;
+            border-radius: 15px;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            animation: fadeInOut 1.5s ease-in-out;
+        }
+        @keyframes pulse { 
+            0% { transform: scale(1); } 
+            50% { transform: scale(1.1); } 
+            100% { transform: scale(1); } 
+        }
+        @keyframes shake { 
+            0%, 100% { transform: translateX(0); } 
+            25% { transform: translateX(-5px); } 
+            75% { transform: translateX(5px); } 
+        }
+        @keyframes fadeInOut { 
+            0% { opacity: 0; transform: translate(-50%, -70%); } 
+            20% { opacity: 1; transform: translate(-50%, -50%); } 
+            80% { opacity: 1; transform: translate(-50%, -50%); } 
+            100% { opacity: 0; transform: translate(-50%, -70%); } 
+        }
+        #game-over { 
+            position: absolute; 
+            top: 50%; 
+            left: 50%; 
+            transform: translate(-50%, -50%); 
+            background: rgba(0,0,0,0.85); 
+            color: white; 
+            padding: 30px; 
+            border-radius: 20px; 
+            width: 80%; 
+            max-width: 500px; 
+            text-align: center; 
+            display: none; 
+            pointer-events: auto;
+            box-shadow: 0 0 30px rgba(0,0,0,0.5);
+            backdrop-filter: blur(10px);
+        }
+        .game-button { 
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            border: none; 
+            color: white; 
+            padding: 15px 32px; 
+            text-align: center; 
+            text-decoration: none; 
+            display: inline-block; 
+            font-size: 18px; 
+            margin: 10px 5px; 
+            cursor: pointer; 
+            border-radius: 25px;
+            transition: all 0.3s;
+            font-family: 'Quicksand', sans-serif;
+            font-weight: 600;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        .game-button:hover { 
+            background: linear-gradient(135deg, #45a049, #3d8b40);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+        }
+        #start-screen { 
+            position: absolute; 
+            top: 50%; 
+            left: 50%; 
+            transform: translate(-50%, -50%); 
+            background: rgba(0,0,0,0.85); 
+            color: white; 
+            padding: 40px; 
+            border-radius: 30px; 
+            width: 80%; 
+            max-width: 600px; 
+            text-align: center; 
+            pointer-events: auto;
+            box-shadow: 0 0 40px rgba(0,0,0,0.5);
+            backdrop-filter: blur(10px);
+        }
+        #start-screen h1 {
+            font-family: 'Poppins', sans-serif;
+            font-size: 48px;
+            font-weight: 800;
+            margin-bottom: 30px;
+            background: linear-gradient(135deg, #fff, #e0e0e0);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        #instructions { 
+            text-align: left; 
+            margin: 30px 0; 
+            font-size: 16px;
+            line-height: 1.6;
+        }
+        #instructions p {
+            margin: 15px 0;
+            padding: 10px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 10px;
+            transition: all 0.3s;
+        }
+        #instructions p:hover {
+            background: rgba(255,255,255,0.15);
+            transform: translateX(5px);
+        }
+        #instructions strong {
+            color: #4CAF50;
+            font-weight: 600;
+        }
+        .shield-active { 
+            position: absolute; 
+            top: 100px; 
+            left: 20px; 
+            color: #FFD700; 
+            font-size: 24px; 
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            font-family: 'Poppins', sans-serif;
+            font-weight: 600;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 10px 20px;
+            border-radius: 15px;
+            backdrop-filter: blur(5px);
+            z-index: 1000;
+        }
+        #shield-timer {
+            position: absolute;
+            top: 160px;
+            left: 20px;
+            width: 200px;
+            height: 12px;
+            background: rgba(0, 0, 0, 0.7);
+            border-radius: 6px;
+            overflow: hidden;
+            display: none;
+            border: 2px solid rgba(255, 215, 0, 0.5);
+            box-shadow: 0 0 15px rgba(255, 215, 0, 0.3);
+            z-index: 1000;
+        }
+        #shield-timer-fill {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, #FFD700, #FFA500);
+            transition: width 0.1s linear;
+            box-shadow: 0 0 15px rgba(255, 215, 0, 0.5);
+        }
+        #achievements-popup { 
+            position: absolute; 
+            top: 100px; 
+            left: 50%; 
+            transform: translateX(-50%); 
+            background: linear-gradient(135deg, rgba(255, 215, 0, 0.9), rgba(255, 165, 0, 0.9));
+            color: #000; 
+            padding: 15px 30px; 
+            border-radius: 25px; 
+            text-align: center; 
+            display: none; 
+            animation: fadeInOut 3s ease-in-out;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            font-family: 'Poppins', sans-serif;
+            font-weight: 600;
+        }
+        @keyframes fadeInOut { 
+            0% { opacity: 0; transform: translateX(-50%) translateY(-20px); } 
+            20% { opacity: 1; transform: translateX(-50%) translateY(0); } 
+            80% { opacity: 1; transform: translateX(-50%) translateY(0); } 
+            100% { opacity: 0; transform: translateX(-50%) translateY(-20px); } 
+        }
+        .leaderboard { 
+            position: absolute; 
+            right: 20px; 
+            top: 20px; 
+            background: rgba(0,0,0,0.7); 
+            color: white; 
+            padding: 20px; 
+            border-radius: 15px; 
+            max-width: 250px; 
+            max-height: 300px; 
+            overflow-y: auto;
+            backdrop-filter: blur(5px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            display: none;
+        }
+        .leaderboard h3 { 
+            margin-top: 0; 
+            text-align: center;
+            font-family: 'Poppins', sans-serif;
+            font-size: 20px;
+            color: #4CAF50;
+        }
+        .leaderboard ol { 
+            padding-left: 25px; 
+            margin-bottom: 5px;
+            font-family: 'Quicksand', sans-serif;
+        }
+        .leaderboard li {
+            margin: 8px 0;
+            padding: 5px 10px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 5px;
+            transition: all 0.3s;
+        }
+        .leaderboard li:hover {
+            background: rgba(255,255,255,0.15);
+            transform: translateX(-5px);
+        }
+        #trivia-timer { 
+            height: 8px; 
+            background: linear-gradient(90deg, #4CAF50, #8BC34A);
+            width: 100%; 
+            margin-top: 25px; 
+            transition: width 10s linear;
+            border-radius: 4px;
+        }
+        #crash-message {
+            font-family: 'Quicksand', sans-serif;
+            font-size: 20px;
+            color: #ff6b6b;
+            margin: 20px 0;
+        }
+        #final-score {
+            font-family: 'Poppins', sans-serif;
+            font-size: 28px;
+            color: #4CAF50;
+            margin: 20px 0;
+        }
+        .character-select {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin: 20px 0;
+        }
+        .character-option {
+            cursor: pointer;
+            padding: 10px;
+            border-radius: 10px;
+            background: rgba(255,255,255,0.1);
+            transition: all 0.3s;
+        }
+        .character-option:hover {
+            background: rgba(255,255,255,0.2);
+            transform: translateY(-5px);
+        }
+        .character-option.selected {
+            background: rgba(76, 175, 80, 0.3);
+            box-shadow: 0 0 10px rgba(76, 175, 80, 0.5);
+        }
+        .character-option img {
+            width: 128px;
+            height: 128px;
+            object-fit: contain;
+        }
+        .game-over-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+        .nickname-input {
+            margin: 20px 0;
+            padding: 15px;
+            border: 2px solid #4CAF50;
+            border-radius: 25px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: 18px;
+            width: 80%;
+            max-width: 300px;
+            text-align: center;
+            font-family: 'Quicksand', sans-serif;
+            transition: all 0.3s;
+        }
+        .nickname-input:focus {
+            outline: none;
+            border-color: #45a049;
+            box-shadow: 0 0 10px rgba(76, 175, 80, 0.3);
+        }
+        .nickname-input::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+        }
+        #player-nickname {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container"></div>
+    <div id="ui-container">
+        <div id="score-display">Punkty: 0</div>
+        <div id="shield-active" class="shield-active" style="display: none;">Tarcza Wiedzy Aktywna!</div>
+        <div id="shield-timer">
+            <div id="shield-timer-fill"></div>
+        </div>
+        <div id="start-screen">
+            <h1>Sowia Odyseja</h1>
+            <input type="text" class="nickname-input" id="nickname-input" placeholder="Wprowadź swój pseudonim" maxlength="15">
+            <div class="character-select">
+                <div class="character-option selected" onclick="selectCharacter(this)">
+                    <img src="owl.png" alt="Male Owl">
+                    <p>Pan Sowa</p>
+                </div>
+                <div class="character-option" onclick="selectCharacter(this)">
+                    <img src="babasowa123.png" alt="Female Owl">
+                    <p>Pani Sowa</p>
+                </div>
+            </div>
+            <div id="instructions">
+                <p><strong>Cel:</strong> Pomóż Sowie unikać przeszkód i zbieraj pióra mądrości!</p>
+                <p><strong>Sterowanie:</strong> Użyj myszy do przeciągania Sowy lub klawiszy strzałek/WASD do poruszania się.</p>
+                <p><strong>Specjalne przedmioty:</strong> Tarcza Wiedzy zapewnia tymczasową tarczę.</p>
+                <p><strong>Wskrzeszenie:</strong> Po rozbiciu się, odpowiedz poprawnie na pytanie, aby kontynuować.</p>
+            </div>
+            <button id="start-button" class="game-button">Rozpocznij Grę</button>
+        </div>
+        <div id="trivia-container">
+            <h2>Sprawdź Swoją Wiedzę!</h2>
+            <p id="trivia-question">Jaki ptak ma największą rozpiętość skrzydeł?</p>
+            <div id="trivia-options"></div>
+            <div id="trivia-timer"></div>
+        </div>
+        <div id="game-over">
+            <h2>Koniec Gry!</h2>
+            <p id="final-score">Twój wynik: 0</p>
+            <p id="crash-message">Sowa zapomniała machnąć skrzydłami!</p>
+            <div class="game-over-buttons">
+                <button id="restart-button" class="game-button">Graj Ponownie</button>
+                <button id="main-menu-button" class="game-button">Menu Główne</button>
+            </div>
+        </div>
+        <div id="achievements-popup">
+            <strong>Osiągnięcie Odblokowane!</strong>
+            <p id="achievement-text">Zbieracz Piór!</p>
+        </div>
+        <div id="leaderboard" class="leaderboard">
+            <h3>Ostatnie Wyniki</h3>
+            <ol id="leaderboard-list"></ol>
+        </div>
+        <div id="answer-feedback"></div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        // Game configuration
+        const config = {
+            initialSpeed: 3,
+            maxSpeed: 15,
+            speedIncreaseScore: 100, // Increase speed every 100 points
+            speedIncreaseAmount: 0.5,
+            initialObstacleSpawnRate: 1500,
+            minObstacleSpawnRate: 300,
+            initialObstacleMinSize: 40,
+            initialObstacleMaxSize: 80,
+            maxObstacleMinSize: 50,
+            maxObstacleMaxSize: 100,
+            featherSpawnRate: 2000,
+            goldenFeatherSpawnRate: 15000,
+            shieldDuration: 3000,
+            reviveCooldown: 60000,
+            triviaTimeout: 10000,
+            playerSize: 80,
+            featherSize: 60, // Increased from 30 to 60
+            goldenFeatherSize: 80,
+            triviaInterval: 30000,
+            triviaScoreBonus: 50
+        };
+
+        // Game state
+        let gameState = {
+            isPlaying: false, score: 0, distance: 0, speed: config.initialSpeed,
+            lastSpeedIncrease: 0, lastObstacleSpawn: 0, lastFeatherSpawn: 0, lastGoldenFeatherSpawn: 0,
+            obstacles: [], feathers: [], goldenFeathers: [],
+            shieldActive: false, shieldEndTime: 0, canRevive: true, lastReviveTime: 0,
+            lastTriviaTime: 0,
+            gameStartTime: 0,
+            achievements: {
+                distanceTraveled: [
+                    { id: "distance-rookie", name: "Sky Beginner", description: "Travel 500 distance", threshold: 500, achieved: false },
+                    { id: "distance-pro", name: "Sky Navigator", description: "Travel 2000 distance", threshold: 2000, achieved: false },
+                    { id: "distance-master", name: "Sky Master", description: "Travel 5000 distance", threshold: 5000, achieved: false }
+                ],
+                feathersCollected: [
+                    { id: "feathers-5", name: "Feather Finder", description: "Collect 5 wisdom feathers", threshold: 5, collected: 0, achieved: false },
+                    { id: "feathers-20", name: "Feather Hunter", description: "Collect 20 wisdom feathers", threshold: 20, collected: 0, achieved: false },
+                    { id: "feathers-50", name: "Feather Master", description: "Collect 50 wisdom feathers", threshold: 50, collected: 0, achieved: false }
+                ],
+                goldenFeathers: [
+                    { id: "golden-feather-1", name: "Golden Touch", description: "Collect first golden feather", threshold: 1, collected: 0, achieved: false },
+                    { id: "golden-feather-3", name: "Golden Fortune", description: "Collect 3 golden feathers", threshold: 3, collected: 0, achieved: false }
+                ],
+                triviaAnswered: [
+                    { id: "trivia-1", name: "Knowledge Seeker", description: "Answer first trivia question correctly", threshold: 1, answered: 0, achieved: false },
+                    { id: "trivia-5", name: "Wisdom Owl", description: "Answer 5 trivia questions correctly", threshold: 5, answered: 0, achieved: false }
+                ]
+            }
+        };
+
+        // Player state
+        let player = { x: 0, y: 0, width: config.playerSize, height: config.playerSize, isAlive: true };
+
+        // Input handling
+        let input = {
+            mouse: { x: 0, y: 0, isDown: false },
+            keys: { up: false, down: false, left: false, right: false }
+        };
+
+        // Crash messages
+        const crashMessages = [
+            "Sowa zapomniała się schylić!", "Do zobaczenia następnym razem!", "To nie było zbyt mądre!",
+            "Czas poćwiczyć latanie!", "Nawet mądre sowy popełniają błędy!",
+            "Sowa potrzebuje więcej praktyki!", "To porządnie zmierzwiało pióra!",
+            "Nie takie udane to lądowanie!", "Mądrość przychodzi z doświadczeniem... i rozbijaniem się!",
+            "Auć! To musiało boleć!"
+        ];
+
+        // Trivia questions
+        const triviaQuestions = [
+        { question: "Jak nazywa się największa sowa występująca w Polsce?", options: ["Puszczyk zwyczajny", "Puchacz zwyczajny", "Sóweczka", "Włochatka"], correctAnswer: "Puchacz zwyczajny" },
+        { question: "Który zmysł jest u sów najlepiej rozwinięty?", options: ["Smak", "Węch", "Słuch", "Dotyk"], correctAnswer: "Słuch" },
+        { question: "Jak nazywa się najmniejsza sowa w Polsce?", options: ["Sóweczka", "Pójdźka", "Puszczyk uralski", "Puchacz"], correctAnswer: "Sóweczka" },
+        { question: "Dlaczego sowy mogą obracać głowę nawet o 270 stopni?", options: ["Mają elastyczne mięśnie szyi", "Mają więcej kręgów szyjnych niż inne ptaki", "Nie mają oczu, tylko radary", "Potrafią odwracać czas"], correctAnswer: "Mają więcej kręgów szyjnych niż inne ptaki" },
+        { question: "Czym głównie żywią się sowy?", options: ["Owocami", "Ryżem", "Małymi ssakami", "Miodem"], correctAnswer: "Małymi ssakami" },
+        { question: "Jak nazywa się charakterystyczny dźwięk wydawany przez sowy?", options: ["Ćwierkanie", "Skrzeczenie", "Hukanie", "Gruchanie"], correctAnswer: "Hukanie" },
+        { question: "Gdzie sowy najczęściej zakładają swoje gniazda?", options: ["Na ziemi", "W dziuplach drzew", "W norach pod ziemią", "Na klifach nad morzem"], correctAnswer: "W dziuplach drzew" },
+        { question: "Dlaczego oczy sów są nieruchome?", options: ["Mają bardzo małe mięśnie oka", "W ogóle nie widzą", "Ich oczy są osadzone w oczodołach na stałe", "Widzą tylko w podczerwieni"], correctAnswer: "Ich oczy są osadzone w oczodołach na stałe" },
+        { question: "Która z tych sów poluje głównie w dzień?", options: ["Pójdźka", "Puszczyk", "Puchacz", "Włochatka"], correctAnswer: "Pójdźka" },
+        { question: "Jak nazywa się sowa będąca symbolem mądrości w mitologii greckiej?", options: ["Puchacz", "Sóweczka", "Sowa Ateny", "Włochatka"], correctAnswer: "Sowa Ateny" }
+        ];
+
+        // Setup Three.js
+        const scene = new THREE.Scene();
+        const camera = new THREE.OrthographicCamera(
+            window.innerWidth / -2, window.innerWidth / 2,
+            window.innerHeight / 2, window.innerHeight / -2,
+            0.1, 1000
+        );
+        camera.position.z = 10;
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.getElementById('game-container').appendChild(renderer.domElement);
+
+        // Create placeholder textures
+        function createPlaceholderTexture(color, size = 64) {
+            // If it's the owl texture, load selected character
+            if (color === '#8B4513') {
+                const textureLoader = new THREE.TextureLoader();
+                const selectedCharacter = localStorage.getItem('selectedCharacter') || 'owl.png';
+                return textureLoader.load(selectedCharacter);
+            }
+            
+            // If it's the cloud texture, load cloud.png
+            if (color === '#708090') {
+                const textureLoader = new THREE.TextureLoader();
+                return textureLoader.load('cloud.png');
+            }
+            
+            const canvas = document.createElement('canvas');
+            canvas.width = size;
+            canvas.height = size;
+            const context = canvas.getContext('2d');
+            
+            // Enable pixel art mode
+            context.imageSmoothingEnabled = false;
+            
+            // Helper function to draw pixel
+            function drawPixel(x, y, color) {
+            context.fillStyle = color;
+                context.fillRect(x, y, 1, 1);
+            }
+            
+            // Add some details based on the type of object
+            if (color === '#8B4513') { // Owl
+                // Body (pixelated oval)
+                for(let y = 0; y < size; y++) {
+                    for(let x = 0; x < size; x++) {
+                        const dx = x - size/2;
+                        const dy = y - size/2;
+                        if(dx*dx/(size/3)/(size/3) + dy*dy/(size/4)/(size/4) < 1) {
+                            drawPixel(x, y, '#8B4513');
+                        }
+                    }
+                }
+                
+                // Eyes (pixelated circles)
+                for(let y = 0; y < size; y++) {
+                    for(let x = 0; x < size; x++) {
+                        const dx1 = x - size/4;
+                        const dy1 = y - size/3;
+                        const dx2 = x - size*3/4;
+                        const dy2 = y - size/3;
+                        if(dx1*dx1 + dy1*dy1 < size/10) {
+                            drawPixel(x, y, '#FFFFFF');
+                        }
+                        if(dx2*dx2 + dy2*dy2 < size/10) {
+                            drawPixel(x, y, '#FFFFFF');
+                        }
+                    }
+                }
+                
+                // Pupils
+                for(let y = 0; y < size; y++) {
+                    for(let x = 0; x < size; x++) {
+                        const dx1 = x - size/4;
+                        const dy1 = y - size/3;
+                        const dx2 = x - size*3/4;
+                        const dy2 = y - size/3;
+                        if(dx1*dx1 + dy1*dy1 < size/20) {
+                            drawPixel(x, y, '#000000');
+                        }
+                        if(dx2*dx2 + dy2*dy2 < size/20) {
+                            drawPixel(x, y, '#000000');
+                        }
+                    }
+                }
+                
+                // Beak (pixelated triangle)
+                for(let y = 0; y < size; y++) {
+                    for(let x = 0; x < size; x++) {
+                        if(x >= size/2 - size/10 && x <= size/2 + size/10 &&
+                           y >= size/3 && y <= size/2) {
+                            drawPixel(x, y, '#FFA500');
+                        }
+                    }
+                }
+                
+                // Wings (pixelated curves)
+                for(let y = 0; y < size; y++) {
+                    for(let x = 0; x < size; x++) {
+                        const dx = x - size/2;
+                        const dy = y - size/2;
+                        if(Math.abs(dx) < size/4 && Math.abs(dy) < size/3) {
+                            drawPixel(x, y, '#8B4513');
+                        }
+                    }
+                }
+            } else if (color === '#ADD8E6') { // Feather
+                // Main feather shape (pixelated)
+                for(let y = 0; y < size; y++) {
+                    for(let x = 0; x < size; x++) {
+                        const dx = x - size/2;
+                        const dy = y - size/2;
+                        if(Math.abs(dx) < size/4 && dy > 0) {
+                            drawPixel(x, y, '#ADD8E6');
+                        }
+                    }
+                }
+                
+                // Sparkle effect
+                for(let y = 0; y < size; y++) {
+                    for(let x = 0; x < size; x++) {
+                        const dx = x - size/2;
+                        const dy = y - size/3;
+                        if(dx*dx + dy*dy < size/8) {
+                            drawPixel(x, y, '#FFFFFF');
+                        }
+                    }
+                }
+            } else if (color === '#FFD700') { // Golden feather
+                // Main feather shape (pixelated)
+                for(let y = 0; y < size; y++) {
+                    for(let x = 0; x < size; x++) {
+                        const dx = x - size/2;
+                        const dy = y - size/2;
+                        if(Math.abs(dx) < size/4 && dy > 0) {
+                            drawPixel(x, y, '#FFD700');
+                        }
+                    }
+                }
+                
+                // Sparkle effect
+                for(let y = 0; y < size; y++) {
+                    for(let x = 0; x < size; x++) {
+                        const dx = x - size/2;
+                        const dy = y - size/3;
+                        if(dx*dx + dy*dy < size/8) {
+                            drawPixel(x, y, '#FFFFFF');
+                        }
+                    }
+                }
+                
+                // Golden glow
+                for(let y = 0; y < size; y++) {
+                    for(let x = 0; x < size; x++) {
+                        const dx = x - size/2;
+                        if(Math.abs(dx) < 2 && y > size/4 && y < size*3/4) {
+                            drawPixel(x, y, '#FFA500');
+                        }
+                    }
+                }
+            } else if (color === '#654321') { // Branch (dangerous)
+                // Main branch (pixelated)
+                for(let y = 0; y < size; y++) {
+                    for(let x = 0; x < size; x++) {
+                        if(x >= size/4 && x <= size*3/4 && y >= size/3 && y <= size*2/3) {
+                            drawPixel(x, y, '#654321');
+                        }
+                    }
+                }
+                
+                // Danger spikes
+                for(let y = 0; y < size; y++) {
+                    for(let x = 0; x < size; x++) {
+                        if(x >= size/4 && x <= size*3/4 && y >= size/6 && y <= size/3) {
+                            if((x - size/4) % (size/4) === 0) {
+                                drawPixel(x, y, '#FF0000');
+                            }
+                        }
+                    }
+                }
+                
+                // Warning pattern
+                for(let y = 0; y < size; y++) {
+                    for(let x = 0; x < size; x++) {
+                        if(x >= size/4 && x <= size*3/4 && y >= size/3 && y <= size*2/3) {
+                            if((x + y) % 10 < 5) {
+                                drawPixel(x, y, '#FF0000');
+                            }
+                        }
+                    }
+                }
+            } else if (color === '#708090') { // Cloud (dangerous)
+                // Main cloud shape (pixelated)
+                for(let y = 0; y < size; y++) {
+                    for(let x = 0; x < size; x++) {
+                        const dx1 = x - size/3;
+                        const dy1 = y - size/2;
+                        const dx2 = x - size*2/3;
+                        const dy2 = y - size/2;
+                        if(dx1*dx1 + dy1*dy1 < size/4 || dx2*dx2 + dy2*dy2 < size/4) {
+                            drawPixel(x, y, '#708090');
+                        }
+                    }
+                }
+                
+                // Lightning effect
+                for(let y = 0; y < size; y++) {
+                    for(let x = 0; x < size; x++) {
+                        if(Math.abs(x - y) < 2) {
+                            drawPixel(x, y, '#FFFF00');
+                        }
+                    }
+                }
+                
+                // Warning pattern
+                for(let y = 0; y < size; y++) {
+                    for(let x = 0; x < size; x++) {
+                        if(x >= size/4 && x <= size*3/4 && y >= size/4 && y <= size*3/4) {
+                            if((x + y) % 10 < 5) {
+                                drawPixel(x, y, '#FF0000');
+                            }
+                        }
+                    }
+                }
+            } else if (color === '#36454F') { // Bat (dangerous)
+                // Main body (pixelated)
+                for(let y = 0; y < size; y++) {
+                    for(let x = 0; x < size; x++) {
+                        const dx = x - size/2;
+                        const dy = y - size/2;
+                        if(dx*dx + dy*dy < size/4) {
+                            drawPixel(x, y, '#36454F');
+                        }
+                    }
+                }
+                
+                // Wings (pixelated)
+                for(let y = 0; y < size; y++) {
+                    for(let x = 0; x < size; x++) {
+                        const dx = x - size/2;
+                        const dy = y - size/2;
+                        if(Math.abs(dx) > size/4 && Math.abs(dy) < size/3) {
+                            drawPixel(x, y, '#36454F');
+                        }
+                    }
+                }
+                
+                // Red eyes
+                for(let y = 0; y < size; y++) {
+                    for(let x = 0; x < size; x++) {
+                        const dx1 = x - size/3;
+                        const dy1 = y - size/2;
+                        const dx2 = x - size*2/3;
+                        const dy2 = y - size/2;
+                        if(dx1*dx1 + dy1*dy1 < size/20 || dx2*dx2 + dy2*dy2 < size/20) {
+                            drawPixel(x, y, '#FF0000');
+                        }
+                    }
+                }
+                
+                // Warning pattern
+                for(let y = 0; y < size; y++) {
+                    for(let x = 0; x < size; x++) {
+                        if(x >= size/4 && x <= size*3/4 && y >= size/4 && y <= size*3/4) {
+                            if((x + y) % 10 < 5) {
+                                drawPixel(x, y, '#FF0000');
+                            }
+                        }
+                    }
+                }
+            } else if (color === '#FF4500') { // Fox (dangerous)
+                // Main body (pixelated)
+                for(let y = 0; y < size; y++) {
+                    for(let x = 0; x < size; x++) {
+                        const dx = x - size/2;
+                        const dy = y - size/2;
+                        if(dx*dx + dy*dy < size/4) {
+                            drawPixel(x, y, '#FF4500');
+                        }
+                    }
+                }
+                
+                // Tail (pixelated)
+                for(let y = 0; y < size; y++) {
+                    for(let x = 0; x < size; x++) {
+                        const dx = x - size/2;
+                        const dy = y - size/2;
+                        if(Math.abs(dx) > size/4 && Math.abs(dy) < size/3) {
+                            drawPixel(x, y, '#FF4500');
+                        }
+                    }
+                }
+                
+                // Ears
+                for(let y = 0; y < size; y++) {
+                    for(let x = 0; x < size; x++) {
+                        const dx1 = x - size/3;
+                        const dy1 = y - size/3;
+                        const dx2 = x - size*2/3;
+                        const dy2 = y - size/3;
+                        if(dx1*dx1 + dy1*dy1 < size/10 || dx2*dx2 + dy2*dy2 < size/10) {
+                            drawPixel(x, y, '#FF4500');
+                        }
+                    }
+                }
+                
+                // Warning pattern
+                for(let y = 0; y < size; y++) {
+                    for(let x = 0; x < size; x++) {
+                        if(x >= size/4 && x <= size*3/4 && y >= size/4 && y <= size*3/4) {
+                            if((x + y) % 10 < 5) {
+                                drawPixel(x, y, '#FF0000');
+                            }
+                        }
+                    }
+                }
+            }
+            
+            return new THREE.CanvasTexture(canvas);
+        }
+
+        const owlTexture = createPlaceholderTexture('#8B4513', 64);
+        const featherTexture = new THREE.TextureLoader().load('feather.png', function(texture) {
+            texture.transparent = true;
+            texture.needsUpdate = true;
+        }, undefined, function(error) {
+            console.error('Error loading feather texture:', error);
+        });
+        const goldenFeatherTexture = createPlaceholderTexture('#FFD700', 32);
+        
+        const backgroundTextures = [
+            new THREE.TextureLoader().load('tlo.gif', function(texture) {
+                texture.wrapS = texture.wrapT = THREE.ClampToEdgeWrapping;
+                texture.magFilter = THREE.LinearFilter;
+                texture.minFilter = THREE.LinearFilter;
+            }), // Static background
+            createPlaceholderTexture('#1A472A', 128), // Far trees
+            createPlaceholderTexture('#2E8B57', 128)  // Near trees
+        ];
+
+        const obstacleTextures = [
+            createPlaceholderTexture('#654321', 64), // Branch
+            createPlaceholderTexture('#708090', 64), // Cloud
+            createPlaceholderTexture('#36454F', 64), // Bat
+            new THREE.TextureLoader().load('fox.png', function(texture) {
+                texture.transparent = true;
+                texture.needsUpdate = true;
+            }, undefined, function(error) {
+                console.error('Error loading fox texture:', error);
+            }),
+            new THREE.TextureLoader().load('eagle.png', function(texture) {
+                texture.transparent = true;
+                texture.needsUpdate = true;
+            }, undefined, function(error) {
+                console.error('Error loading eagle texture:', error);
+            }),
+            new THREE.TextureLoader().load('raccon.png', function(texture) {
+                texture.transparent = true;
+                texture.needsUpdate = true;
+            }, undefined, function(error) {
+                console.error('Error loading raccoon texture:', error);
+            })
+        ];
+
+        // Add raccoon as a collectible texture
+        const raccoonTexture = new THREE.TextureLoader().load('raccon.png', function(texture) {
+            texture.transparent = true;
+            texture.needsUpdate = true;
+        }, undefined, function(error) {
+            console.error('Error loading raccoon texture:', error);
+        });
+
+        // Create background with parallax layers
+        const backgroundLayers = [];
+        for (let i = 0; i < backgroundTextures.length; i++) {
+            // Main background (tlo.gif) should be static and fill the screen
+            const geometry = i === 0 
+                ? new THREE.PlaneGeometry(window.innerWidth, window.innerHeight) // Static background
+                : new THREE.PlaneGeometry(window.innerWidth * 2, window.innerHeight);
+                
+            const material = new THREE.MeshBasicMaterial({ 
+                map: backgroundTextures[i], 
+                transparent: true,
+                opacity: i === 0 ? 1 : 1 - (i * 0.2) // Full opacity for main background
+            });
+            
+            // For main background (tlo.gif), adjust texture settings
+            if (i === 0) {
+                material.transparent = false; // No transparency for main background
+                material.blending = THREE.NormalBlending;
+                // Create only one layer for the static background
+                const plane = new THREE.Mesh(geometry, material);
+                plane.position.z = -10 + i;
+                plane.position.x = 0; // Center the background
+                scene.add(plane);
+                backgroundLayers.push({
+                    mesh: plane,
+                    speed: 0, // No movement for main background
+                    width: window.innerWidth,
+                    index: i
+                });
+            } else {
+                // Create two planes for parallax layers
+            for (let j = 0; j < 2; j++) {
+                const plane = new THREE.Mesh(geometry, material);
+                plane.position.z = -10 + i;
+                plane.position.x = j * window.innerWidth * 2;
+                scene.add(plane);
+                backgroundLayers.push({
+                    mesh: plane,
+                    speed: config.initialSpeed * (0.2 + (i * 0.4)),
+                    width: window.innerWidth * 2,
+                    index: i
+                });
+                }
+            }
+        }
+
+        // Create player (Hootie)
+        const playerGeometry = new THREE.PlaneGeometry(player.width, player.height);
+        const playerMaterial = new THREE.MeshBasicMaterial({ 
+            map: owlTexture,
+            transparent: true
+        });
+        const playerMesh = new THREE.Mesh(playerGeometry, playerMaterial);
+        scene.add(playerMesh);
+
+        // Add particle effects for golden feather collection
+        const particles = [];
+        const particleCount = 20;
+        for (let i = 0; i < particleCount; i++) {
+            const particleGeometry = new THREE.CircleGeometry(4, 8);
+            const particleMaterial = new THREE.MeshBasicMaterial({
+            color: 0xFFD700,
+            transparent: true,
+                opacity: 0.8
+            });
+            const particle = new THREE.Mesh(particleGeometry, particleMaterial);
+            particle.visible = false;
+            scene.add(particle);
+            particles.push({
+                mesh: particle,
+                velocity: { x: 0, y: 0 },
+                life: 0,
+                maxLife: 1
+            });
+        }
+
+        // Add golden burst effect
+        const burstGeometry = new THREE.CircleGeometry(player.width * 2, 32);
+        const burstMaterial = new THREE.MeshBasicMaterial({
+            color: 0xFFD700,
+            transparent: true,
+            opacity: 0,
+            side: THREE.DoubleSide
+        });
+        const burstMesh = new THREE.Mesh(burstGeometry, burstMaterial);
+        burstMesh.visible = false;
+        scene.add(burstMesh);
+
+        // Add shield activation effect
+        const shieldActivationGeometry = new THREE.PlaneGeometry(player.width * 3, player.height * 3);
+        const shieldActivationMaterial = new THREE.MeshBasicMaterial({
+            color: 0x00ffff,
+            transparent: true,
+            opacity: 0,
+            side: THREE.DoubleSide
+        });
+        const shieldActivationMesh = new THREE.Mesh(shieldActivationGeometry, shieldActivationMaterial);
+        shieldActivationMesh.visible = false;
+        scene.add(shieldActivationMesh);
+
+        // Animation frame ID
+        let animationFrameId;
+        let triviaTimerId;
+
+        // Initialize game
+        function initGame() {
+            // Store selected character
+            const selectedCharacter = document.querySelector('.character-option.selected img').src.split('/').pop();
+            localStorage.setItem('selectedCharacter', selectedCharacter);
+            
+            // Cancel any existing animation frame
+            if (animationFrameId) {
+                cancelAnimationFrame(animationFrameId);
+                animationFrameId = null;
+            }
+            
+            // Reset game state
+            gameState = {
+                isPlaying: true, score: 0, distance: 0, speed: config.initialSpeed,
+                lastSpeedIncrease: 0, lastObstacleSpawn: 0,
+                lastFeatherSpawn: 0, lastGoldenFeatherSpawn: 0,
+                obstacles: [], feathers: [], goldenFeathers: [],
+                shieldActive: false, shieldEndTime: 0, canRevive: true, lastReviveTime: 0,
+                lastTriviaTime: Date.now(), // Set initial trivia time to now
+                gameStartTime: Date.now(), // Set game start time
+                achievements: {
+                    distanceTraveled: gameState.achievements.distanceTraveled.map(a => ({...a, achieved: false})),
+                    feathersCollected: gameState.achievements.feathersCollected.map(a => ({...a, collected: 0, achieved: false})),
+                    goldenFeathers: gameState.achievements.goldenFeathers.map(a => ({...a, collected: 0, achieved: false})),
+                    triviaAnswered: gameState.achievements.triviaAnswered.map(a => ({...a, answered: 0, achieved: false}))
+                }
+            };
+            
+            // Reset player
+            player = { x: 0, y: 0, width: config.playerSize, height: config.playerSize, isAlive: true };
+            playerMesh.position.set(player.x, player.y, 0);
+            
+            // Clear existing obstacles and feathers
+            gameState.obstacles.forEach(obstacle => scene.remove(obstacle.mesh));
+            gameState.feathers.forEach(feather => scene.remove(feather.mesh));
+            gameState.goldenFeathers.forEach(goldenFeather => scene.remove(goldenFeather.mesh));
+            
+            gameState.obstacles = [];
+            gameState.feathers = [];
+            gameState.goldenFeathers = [];
+            
+            // Show score display and leaderboard
+            document.getElementById('score-display').style.display = 'block';
+            document.getElementById('leaderboard').style.display = 'block';
+            
+            // Update UI
+            document.getElementById('score-display').textContent = 'Punkty: 0';
+            document.getElementById('shield-active').style.display = 'none';
+            
+            // Hide start screen and game over
+            document.getElementById('start-screen').style.display = 'none';
+            document.getElementById('game-over').style.display = 'none';
+            
+            // Start animation
+                animate();
+            
+            // Update leaderboard
+            updateLeaderboard();
+        }
+
+        // Collision detection
+        function checkCollision(x1, y1, w1, h1, x2, y2, w2, h2) {
+            // For the owl (player), use a smaller hitbox (70% of sprite size)
+            const adjustedW1 = w1 * 0.7;
+            const adjustedH1 = h1 * 0.7;
+            
+            return Math.abs(x1 - x2) < (adjustedW1 + w2) / 2 && 
+                   Math.abs(y1 - y2) < (adjustedH1 + h2) / 2;
+        }
+
+        // Handle collision with obstacle
+        function handleCollision() {
+            if (!player.isAlive) return;
+            
+            player.isAlive = false;
+            gameState.isPlaying = false; // Pause the game
+            
+            // Find the colliding obstacle
+            let collidingObstacle = null;
+            for (let i = 0; i < gameState.obstacles.length; i++) {
+                const obstacle = gameState.obstacles[i];
+                if (checkCollision(player.x, player.y, player.width, player.height,
+                                 obstacle.mesh.position.x, obstacle.mesh.position.y,
+                                 obstacle.width, obstacle.height)) {
+                    collidingObstacle = obstacle;
+                    break;
+                }
+            }
+            
+            // Store current game state
+            gameState.frozenState = {
+                obstacles: [...gameState.obstacles],
+                feathers: [...gameState.feathers],
+                goldenFeathers: [...gameState.goldenFeathers],
+                distance: gameState.distance,
+                speed: gameState.speed,
+                score: gameState.score,
+                collidingObstacle: collidingObstacle // Store the colliding obstacle
+            };
+            
+            if (gameState.canRevive) {
+                // Show trivia question immediately
+                showTriviaQuestion();
+            } else {
+                endGame();
+            }
+        }
+
+        // Show trivia question
+        function showTriviaQuestion() {
+            // Pause game
+            gameState.isPlaying = false;
+            
+            // Get random question
+            const triviaIndex = Math.floor(Math.random() * triviaQuestions.length);
+            const trivia = triviaQuestions[triviaIndex];
+            
+            // Set question text
+            document.getElementById('trivia-question').textContent = trivia.question;
+            
+            // Clear previous options
+            const optionsContainer = document.getElementById('trivia-options');
+            optionsContainer.innerHTML = '';
+            
+            // Shuffle options
+            const shuffledOptions = [...trivia.options].sort(() => Math.random() - 0.5);
+            
+            // Add options
+            shuffledOptions.forEach(option => {
+                const button = document.createElement('button');
+                button.className = 'trivia-option';
+                button.textContent = option;
+                button.addEventListener('click', () => checkAnswer(option, trivia.correctAnswer));
+                optionsContainer.appendChild(button);
+            });
+            
+            // Show trivia container
+            document.getElementById('trivia-container').style.display = 'block';
+            
+            // Reset timer
+            const timerElement = document.getElementById('trivia-timer');
+            timerElement.style.width = '100%';
+            
+            // Start timer animation
+            setTimeout(() => {
+                timerElement.style.width = '0%';
+            }, 50);
+            
+            // Set timeout for answering
+            triviaTimerId = setTimeout(() => {
+                endGame();
+            }, config.triviaTimeout);
+        }
+
+        // Check trivia answer
+        function checkAnswer(selected, correct) {
+            clearTimeout(triviaTimerId);
+            
+            // Disable all buttons
+            const buttons = document.querySelectorAll('.trivia-option');
+            buttons.forEach(button => {
+                button.disabled = true;
+                if (button.textContent === correct) {
+                    button.classList.add('correct');
+                } else if (button.textContent === selected) {
+                    button.classList.add('incorrect');
+                }
+            });
+            
+            // Show feedback
+            const feedback = document.getElementById('answer-feedback');
+            if (selected === correct) {
+                feedback.textContent = 'Poprawnie! Brawo!';
+                feedback.style.color = '#4CAF50';
+            } else {
+                feedback.textContent = 'Źle! Koniec gry!';
+                feedback.style.color = '#f44336';
+            }
+            feedback.style.display = 'block';
+            
+            // Wait before continuing
+            setTimeout(() => {
+                document.getElementById('trivia-container').style.display = 'none';
+                feedback.style.display = 'none';
+                
+                if (selected !== correct) {
+                    endGame();
+                    return;
+                }
+                
+                // Correct answer - restore game state
+                player.isAlive = true;
+                gameState.isPlaying = true;
+                gameState.canRevive = false;
+                gameState.lastReviveTime = Date.now();
+                
+                // Restore frozen state
+                if (gameState.frozenState) {
+                    // Remove the colliding obstacle from the scene and array
+                    if (gameState.frozenState.collidingObstacle) {
+                        scene.remove(gameState.frozenState.collidingObstacle.mesh);
+                        gameState.obstacles = gameState.frozenState.obstacles.filter(
+                            obs => obs !== gameState.frozenState.collidingObstacle
+                        );
+                    }
+                    
+                    gameState.feathers = gameState.frozenState.feathers;
+                    gameState.goldenFeathers = gameState.frozenState.goldenFeathers;
+                    gameState.distance = gameState.frozenState.distance;
+                    gameState.speed = gameState.frozenState.speed;
+                    gameState.score = gameState.frozenState.score;
+                    delete gameState.frozenState;
+                }
+                
+                // Update trivia achievement
+                const triviaAchievements = gameState.achievements.triviaAnswered;
+                triviaAchievements.forEach(achievement => {
+                    achievement.answered += 1;
+                    if (!achievement.achieved && achievement.answered >= achievement.threshold) {
+                        achievement.achieved = true;
+                        showAchievement(achievement.name);
+                    }
+                });
+                
+                // Reset revive cooldown
+                setTimeout(() => {
+                    gameState.canRevive = true;
+                }, config.reviveCooldown);
+                
+                // Restart the animation loop
+                if (animationFrameId) {
+                    cancelAnimationFrame(animationFrameId);
+                }
+                animate();
+            }, 1500);
+        }
+
+        // End game
+        function endGame() {
+            clearTimeout(triviaTimerId);
+            
+            if (animationFrameId) {
+                cancelAnimationFrame(animationFrameId);
+                animationFrameId = null;
+            }
+            
+            gameState.isPlaying = false;
+            player.isAlive = false;
+            
+            // Clear all existing objects
+            gameState.obstacles.forEach(obstacle => scene.remove(obstacle.mesh));
+            gameState.feathers.forEach(feather => scene.remove(feather.mesh));
+            gameState.goldenFeathers.forEach(goldenFeather => scene.remove(goldenFeather.mesh));
+            
+            gameState.obstacles = [];
+            gameState.feathers = [];
+            gameState.goldenFeathers = [];
+            
+            // Hide trivia container if visible
+            document.getElementById('trivia-container').style.display = 'none';
+            
+            // Update game over screen
+            document.getElementById('final-score').textContent = `Twój wynik: ${gameState.score}`;
+            document.getElementById('crash-message').textContent = crashMessages[Math.floor(Math.random() * crashMessages.length)];
+            
+            // Show game over screen
+            document.getElementById('game-over').style.display = 'block';
+            
+            // Save score to leaderboard
+            saveScore(gameState.score);
+        }
+
+        // Save score to leaderboard
+        function saveScore(score) {
+            const leaderboard = JSON.parse(localStorage.getItem('owlOdysseyLeaderboard') || '[]');
+            leaderboard.push({ score, date: new Date().toISOString() });
+            
+            // Keep only last 5 scores
+            const lastScores = leaderboard.slice(-5);
+            localStorage.setItem('owlOdysseyLeaderboard', JSON.stringify(lastScores));
+            
+            updateLeaderboard();
+        }
+
+        // Update leaderboard display
+        function updateLeaderboard() {
+            const leaderboard = JSON.parse(localStorage.getItem('owlOdysseyLeaderboard') || '[]');
+            const leaderboardList = document.getElementById('leaderboard-list');
+            
+            leaderboardList.innerHTML = '';
+            
+            leaderboard.forEach(entry => {
+                const li = document.createElement('li');
+                li.textContent = `${entry.score} punktów`;
+                leaderboardList.appendChild(li);
+            });
+        }
+
+        // Show achievement notification
+        function showAchievement(name) {
+            const popup = document.getElementById('achievements-popup');
+            document.getElementById('achievement-text').textContent = name;
+            
+            popup.style.display = 'block';
+            
+            // Hide after animation completes
+            setTimeout(() => {
+                popup.style.display = 'none';
+            }, 3000);
+        }
+
+        // Create game objects
+        function createObstacle() {
+            const now = Date.now();
+            if (now - gameState.lastObstacleSpawn < config.obstacleSpawnRate) return;
+            
+            gameState.lastObstacleSpawn = now;
+            
+            // Calculate difficulty multiplier based on score
+            const difficultyMultiplier = 1 + (gameState.score / 500);
+            
+            // Gradually decrease spawn rate as score increases
+            config.obstacleSpawnRate = Math.max(
+                config.minObstacleSpawnRate, 
+                config.initialObstacleSpawnRate - (gameState.score / 100)
+            );
+            
+            // Increase obstacle sizes over time based on score
+            const minSize = Math.min(
+                config.maxObstacleMinSize,
+                config.initialObstacleMinSize + (gameState.score / 200)
+            );
+            const maxSize = Math.min(
+                config.maxObstacleMaxSize,
+                config.initialObstacleMaxSize + (gameState.score / 200)
+            );
+            
+            const size = Math.random() * (maxSize - minSize) + minSize;
+            const textureIndex = Math.floor(Math.random() * obstacleTextures.length);
+            
+            // Make fox, eagle, and raccoon obstacles larger
+            const finalSize = (textureIndex === 3 || textureIndex === 4 || textureIndex === 5) ? size * 2.5 : size; // Fox is at index 3, Eagle at index 4, Raccoon at index 5
+            
+            const geometry = new THREE.PlaneGeometry(finalSize, finalSize);
+            const material = new THREE.MeshBasicMaterial({ 
+                map: obstacleTextures[textureIndex],
+                transparent: true
+            });
+            
+            const mesh = new THREE.Mesh(geometry, material);
+            
+            // Position at the right edge of the screen with random y
+            mesh.position.x = window.innerWidth / 2 + finalSize / 2;
+            mesh.position.y = (Math.random() * window.innerHeight) - (window.innerHeight / 2);
+            
+            scene.add(mesh);
+            
+            // Add to obstacles array with some variation in speed
+            gameState.obstacles.push({
+                mesh,
+                width: finalSize,
+                height: finalSize,
+                speed: gameState.speed * (0.8 + Math.random() * 0.4) * difficultyMultiplier
+            });
+        }
+
+        function createFeather() {
+            const now = Date.now();
+            if (now - gameState.lastFeatherSpawn < config.featherSpawnRate) return;
+            
+            gameState.lastFeatherSpawn = now;
+            
+            const geometry = new THREE.PlaneGeometry(config.featherSize, config.featherSize);
+            const material = new THREE.MeshBasicMaterial({ 
+                map: featherTexture,
+                transparent: true
+            });
+            
+            const mesh = new THREE.Mesh(geometry, material);
+            
+            mesh.position.x = window.innerWidth / 2 + config.featherSize / 2;
+            mesh.position.y = (Math.random() * window.innerHeight) - (window.innerHeight / 2);
+            
+            scene.add(mesh);
+            
+            gameState.feathers.push({
+                mesh,
+                width: config.featherSize,
+                height: config.featherSize
+            });
+        }
+
+        function createGoldenFeather() {
+            const now = Date.now();
+            if (now - gameState.lastGoldenFeatherSpawn < config.goldenFeatherSpawnRate) return;
+            
+            gameState.lastGoldenFeatherSpawn = now;
+            
+            const geometry = new THREE.PlaneGeometry(config.goldenFeatherSize, config.goldenFeatherSize);
+            const material = new THREE.MeshBasicMaterial({ 
+                map: new THREE.TextureLoader().load('shield.png', function(texture) {
+                    texture.transparent = true;
+                    texture.needsUpdate = true;
+                }),
+                transparent: true
+            });
+            
+            const mesh = new THREE.Mesh(geometry, material);
+            
+            mesh.position.x = window.innerWidth / 2 + config.goldenFeatherSize / 2;
+            mesh.position.y = (Math.random() * window.innerHeight) - (window.innerHeight / 2);
+            
+            scene.add(mesh);
+            
+            gameState.goldenFeathers.push({
+                mesh,
+                width: config.goldenFeatherSize,
+                height: config.goldenFeatherSize
+            });
+        }
+
+        // Update game elements
+        function updatePlayer() {
+            const targetX = input.mouse.isDown ? input.mouse.x : player.x;
+            const targetY = input.mouse.isDown ? input.mouse.y : player.y;
+            
+            // Add keyboard controls
+            if (input.keys.left) player.x -= 5;
+            if (input.keys.right) player.x += 5;
+            if (input.keys.up) player.y += 5;
+            if (input.keys.down) player.y -= 5;
+            
+            // Smooth movement when using mouse
+            if (input.mouse.isDown) {
+                player.x += (targetX - player.x) * 0.1;
+                player.y += (targetY - player.y) * 0.1;
+            }
+            
+            // Keep player within screen bounds
+            player.x = Math.max(-window.innerWidth/2, Math.min(window.innerWidth/2, player.x));
+            player.y = Math.max(-window.innerHeight/2, Math.min(window.innerHeight/2, player.y));
+            
+            // Update player mesh position
+            playerMesh.position.set(player.x, player.y, 0);
+        }
+
+        function updateObstacles() {
+            for (let i = gameState.obstacles.length - 1; i >= 0; i--) {
+                const obstacle = gameState.obstacles[i];
+                
+                // Calculate difficulty multiplier based on score
+                const difficultyMultiplier = 1 + (gameState.score / 500);
+                
+                // Update obstacle speed with difficulty
+                obstacle.mesh.position.x -= obstacle.speed * difficultyMultiplier;
+                
+                // Check collision with player
+                if (player.isAlive && !gameState.shieldActive && 
+                    checkCollision(player.x, player.y, player.width, player.height,
+                                 obstacle.mesh.position.x, obstacle.mesh.position.y,
+                                 obstacle.width, obstacle.height)) {
+                    handleCollision();
+                }
+                
+                // Remove obstacles that are off screen
+                if (obstacle.mesh.position.x < -window.innerWidth/2) {
+                    scene.remove(obstacle.mesh);
+                    gameState.obstacles.splice(i, 1);
+                }
+            }
+        }
+
+        function updateFeathers() {
+            for (let i = gameState.feathers.length - 1; i >= 0; i--) {
+                const feather = gameState.feathers[i];
+                feather.mesh.position.x -= gameState.speed;
+                
+                // Check collision with player
+                if (player.isAlive && 
+                    checkCollision(player.x, player.y, player.width, player.height,
+                                 feather.mesh.position.x, feather.mesh.position.y,
+                                 feather.width, feather.height)) {
+                    scene.remove(feather.mesh);
+                    gameState.feathers.splice(i, 1);
+                    gameState.score += 10;
+                    document.getElementById('score-display').textContent = `Punkty: ${gameState.score}`;
+                    
+                    // Update feather collection achievement
+                    const featherAchievements = gameState.achievements.feathersCollected;
+                    featherAchievements.forEach(achievement => {
+                        achievement.collected += 1;
+                        if (!achievement.achieved && achievement.collected >= achievement.threshold) {
+                            achievement.achieved = true;
+                            showAchievement(achievement.name);
+                        }
+                    });
+                }
+                
+                // Remove feathers that are off screen
+                if (feather.mesh.position.x < -window.innerWidth/2) {
+                    scene.remove(feather.mesh);
+                    gameState.feathers.splice(i, 1);
+                }
+            }
+        }
+
+        function updateGoldenFeathers() {
+            for (let i = gameState.goldenFeathers.length - 1; i >= 0; i--) {
+                const goldenFeather = gameState.goldenFeathers[i];
+                goldenFeather.mesh.position.x -= gameState.speed;
+                
+                // Check collision with player
+                if (player.isAlive && 
+                    checkCollision(player.x, player.y, player.width, player.height,
+                                 goldenFeather.mesh.position.x, goldenFeather.mesh.position.y,
+                                 goldenFeather.width, goldenFeather.height)) {
+                    scene.remove(goldenFeather.mesh);
+                    gameState.goldenFeathers.splice(i, 1);
+                    
+                    // Activate shield
+                    gameState.shieldActive = true;
+                    gameState.shieldEndTime = Date.now() + config.shieldDuration;
+                    
+                    // Show shield UI elements
+                    document.getElementById('shield-active').style.display = 'block';
+                    document.getElementById('shield-timer').style.display = 'block';
+                    
+                    // Reset and start the timer animation
+                    const timerFill = document.getElementById('shield-timer-fill');
+                    timerFill.style.transition = 'width 0.1s linear';
+                    timerFill.style.width = '100%';
+                    
+                    // Update golden feather achievement
+                    const goldenFeatherAchievements = gameState.achievements.goldenFeathers;
+                    goldenFeatherAchievements.forEach(achievement => {
+                        achievement.collected += 1;
+                        if (!achievement.achieved && achievement.collected >= achievement.threshold) {
+                            achievement.achieved = true;
+                            showAchievement(achievement.name);
+                        }
+                    });
+                }
+                
+                // Remove golden feathers that are off screen
+                if (goldenFeather.mesh.position.x < -window.innerWidth/2) {
+                    scene.remove(goldenFeather.mesh);
+                    gameState.goldenFeathers.splice(i, 1);
+                }
+            }
+        }
+
+        function updateBackground() {
+            backgroundLayers.forEach(layer => {
+                layer.mesh.position.x -= layer.speed;
+                
+                // Reset position when layer is off screen
+                if (layer.mesh.position.x <= -layer.width) {
+                    layer.mesh.position.x += layer.width * 2;
+                }
+            });
+        }
+
+        function updateGameSpeed() {
+            // Calculate difficulty multiplier based on score
+            const difficultyMultiplier = 1 + (gameState.score / 500);
+            
+            // Increase speed based on score
+            const targetSpeed = Math.min(
+                config.maxSpeed,
+                config.initialSpeed + (Math.floor(gameState.score / config.speedIncreaseScore) * config.speedIncreaseAmount * difficultyMultiplier)
+            );
+            
+            // Smoothly adjust current speed towards target speed
+            gameState.speed += (targetSpeed - gameState.speed) * 0.1;
+            
+            // Update distance achievement
+            const distanceAchievements = gameState.achievements.distanceTraveled;
+            distanceAchievements.forEach(achievement => {
+                if (!achievement.achieved && gameState.distance >= achievement.threshold) {
+                    achievement.achieved = true;
+                    showAchievement(achievement.name);
+                }
+            });
+        }
+
+        function updateShield() {
+            if (gameState.shieldActive) {
+                const remainingTime = gameState.shieldEndTime - Date.now();
+                if (remainingTime <= 0) {
+                    gameState.shieldActive = false;
+                    document.getElementById('shield-active').style.display = 'none';
+                    document.getElementById('shield-timer').style.display = 'none';
+                    document.getElementById('shield-timer-fill').style.width = '0%';
+                } else {
+                    // Update timer fill width based on remaining time
+                    const fillWidth = (remainingTime / config.shieldDuration) * 100;
+                    document.getElementById('shield-timer-fill').style.width = `${fillWidth}%`;
+                    
+                    // Ensure timer is visible
+                    document.getElementById('shield-timer').style.display = 'block';
+                    document.getElementById('shield-active').style.display = 'block';
+                }
+            }
+        }
+
+        // Show trivia question during gameplay
+        function showGameplayTrivia() {
+            if (!gameState.isPlaying || !player.isAlive) return;
+            
+            // Don't show trivia in the first 15 seconds of gameplay
+            const timeSinceStart = Date.now() - gameState.gameStartTime;
+            if (timeSinceStart < 15000) return;
+            
+            // Don't show trivia if we're already showing one
+            if (document.getElementById('trivia-container').style.display === 'block') return;
+            
+            const now = Date.now();
+            const timeSinceLastTrivia = now - gameState.lastTriviaTime;
+            
+            // Only show trivia if enough time has passed
+            if (timeSinceLastTrivia < config.triviaInterval) return;
+            
+            gameState.lastTriviaTime = now;
+            
+            // Pause game
+            gameState.isPlaying = false;
+            
+            // Get random question
+            const triviaIndex = Math.floor(Math.random() * triviaQuestions.length);
+            const trivia = triviaQuestions[triviaIndex];
+            
+            // Set question text
+            document.getElementById('trivia-question').textContent = trivia.question;
+            
+            // Clear previous options
+            const optionsContainer = document.getElementById('trivia-options');
+            optionsContainer.innerHTML = '';
+            
+            // Shuffle options
+            const shuffledOptions = [...trivia.options].sort(() => Math.random() - 0.5);
+            
+            // Add options
+            shuffledOptions.forEach(option => {
+                const button = document.createElement('button');
+                button.className = 'trivia-option';
+                button.textContent = option;
+                button.addEventListener('click', () => checkGameplayAnswer(option, trivia.correctAnswer));
+                optionsContainer.appendChild(button);
+            });
+            
+            // Show trivia container
+            document.getElementById('trivia-container').style.display = 'block';
+            
+            // Reset timer
+            const timerElement = document.getElementById('trivia-timer');
+            timerElement.style.width = '100%';
+            
+            // Start timer animation
+            setTimeout(() => {
+                timerElement.style.width = '0%';
+            }, 50);
+            
+            // Set timeout for answering
+            triviaTimerId = setTimeout(() => {
+                handleGameplayTriviaTimeout();
+            }, config.triviaTimeout);
+        }
+
+        // Check answer for gameplay trivia
+        function checkGameplayAnswer(selected, correct) {
+            clearTimeout(triviaTimerId);
+            
+            // Disable all buttons
+            const buttons = document.querySelectorAll('.trivia-option');
+            buttons.forEach(button => {
+                button.disabled = true;
+                if (button.textContent === correct) {
+                    button.classList.add('correct');
+                } else if (button.textContent === selected) {
+                    button.classList.add('incorrect');
+                }
+            });
+            
+            // Show feedback
+            const feedback = document.getElementById('answer-feedback');
+            if (selected === correct) {
+                feedback.textContent = 'Poprawnie! +50 punktów!';
+                feedback.style.color = '#4CAF50';
+                gameState.score += config.triviaScoreBonus;
+                document.getElementById('score-display').textContent = `Punkty: ${gameState.score}`;
+            } else {
+                feedback.textContent = 'Źle! Spróbuj następnym razem!';
+                feedback.style.color = '#f44336';
+            }
+            feedback.style.display = 'block';
+            
+            // Wait before continuing
+            setTimeout(() => {
+                document.getElementById('trivia-container').style.display = 'none';
+                feedback.style.display = 'none';
+                
+                // Resume game
+                gameState.isPlaying = true;
+                
+                // Update trivia achievement
+                const triviaAchievements = gameState.achievements.triviaAnswered;
+                triviaAchievements.forEach(achievement => {
+                    achievement.answered += 1;
+                    if (!achievement.achieved && achievement.answered >= achievement.threshold) {
+                        achievement.achieved = true;
+                        showAchievement(achievement.name);
+                    }
+                });
+                
+                // Restart the animation loop
+                if (animationFrameId) {
+                    cancelAnimationFrame(animationFrameId);
+                }
+                animate();
+            }, 1500);
+        }
+
+        // Handle timeout for gameplay trivia
+        function handleGameplayTriviaTimeout() {
+            document.getElementById('trivia-container').style.display = 'none';
+            gameState.isPlaying = true;
+            
+            // Restart the animation loop
+            if (animationFrameId) {
+                cancelAnimationFrame(animationFrameId);
+            }
+            animate();
+        }
+
+        // Modify the animate function to include trivia checks
+        function animate() {
+            if (!gameState.isPlaying) return;
+            
+            // Update game state
+            gameState.distance += gameState.speed;
+            updatePlayer();
+            updateObstacles();
+            updateFeathers();
+            updateGoldenFeathers();
+            updateBackground();
+            updateGameSpeed();
+            updateShield();
+            
+            // Check for trivia during gameplay
+            showGameplayTrivia();
+            
+            // Create new game objects
+            createObstacle();
+            createFeather();
+            createGoldenFeather();
+            
+            // Render scene
+            renderer.render(scene, camera);
+            
+            // Request next frame
+            animationFrameId = requestAnimationFrame(animate);
+        }
+
+        // Event listeners
+        document.addEventListener('mousedown', (e) => {
+            input.mouse.isDown = true;
+            input.mouse.x = e.clientX - window.innerWidth/2;
+            input.mouse.y = -e.clientY + window.innerHeight/2;
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (input.mouse.isDown) {
+                input.mouse.x = e.clientX - window.innerWidth/2;
+                input.mouse.y = -e.clientY + window.innerHeight/2;
+            }
+        });
+
+        document.addEventListener('mouseup', () => {
+            input.mouse.isDown = false;
+        });
+
+        document.addEventListener('keydown', (e) => {
+            switch(e.key.toLowerCase()) {
+                case 'arrowleft':
+                case 'a':
+                    input.keys.left = true;
+                    break;
+                case 'arrowright':
+                case 'd':
+                    input.keys.right = true;
+                    break;
+                case 'arrowup':
+                case 'w':
+                    input.keys.up = true;
+                    break;
+                case 'arrowdown':
+                case 's':
+                    input.keys.down = true;
+                    break;
+            }
+        });
+
+        document.addEventListener('keyup', (e) => {
+            switch(e.key.toLowerCase()) {
+                case 'arrowleft':
+                case 'a':
+                    input.keys.left = false;
+                    break;
+                case 'arrowright':
+                case 'd':
+                    input.keys.right = false;
+                    break;
+                case 'arrowup':
+                case 'w':
+                    input.keys.up = false;
+                    break;
+                case 'arrowdown':
+                case 's':
+                    input.keys.down = false;
+                    break;
+            }
+        });
+
+        // Start button event listener
+        document.getElementById('start-button').addEventListener('click', initGame);
+
+        // Restart button event listener
+        document.getElementById('restart-button').addEventListener('click', initGame);
+
+        // Main menu button event listener
+        document.getElementById('main-menu-button').addEventListener('click', () => {
+            // Hide game over screen
+            document.getElementById('game-over').style.display = 'none';
+            // Show start screen
+            document.getElementById('start-screen').style.display = 'block';
+            // Hide score display and leaderboard
+            document.getElementById('score-display').style.display = 'none';
+            document.getElementById('leaderboard').style.display = 'none';
+            // Reset game state
+            gameState.isPlaying = false;
+            player.isAlive = false;
+            // Clear all existing objects
+            gameState.obstacles.forEach(obstacle => scene.remove(obstacle.mesh));
+            gameState.feathers.forEach(feather => scene.remove(feather.mesh));
+            gameState.goldenFeathers.forEach(goldenFeather => scene.remove(goldenFeather.mesh));
+            
+            gameState.obstacles = [];
+            gameState.feathers = [];
+            gameState.goldenFeathers = [];
+            
+            // Reset shield
+            gameState.shieldActive = false;
+            document.getElementById('shield-active').style.display = 'none';
+            document.getElementById('shield-timer').style.display = 'none';
+            document.getElementById('shield-timer-fill').style.width = '0%';
+        });
+
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            camera.left = window.innerWidth / -2;
+            camera.right = window.innerWidth / 2;
+            camera.top = window.innerHeight / 2;
+            camera.bottom = window.innerHeight / -2;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // Add character selection function
+        function selectCharacter(element) {
+            // Remove selected class from all options
+            document.querySelectorAll('.character-option').forEach(option => {
+                option.classList.remove('selected');
+            });
+            // Add selected class to clicked option
+            element.classList.add('selected');
+            
+            // Update player texture
+            const selectedCharacter = element.querySelector('img').src.split('/').pop();
+            const textureLoader = new THREE.TextureLoader();
+            playerMaterial.map = textureLoader.load(selectedCharacter);
+            playerMaterial.needsUpdate = true;
+        }
+    </script>
+</body>
+</html>
