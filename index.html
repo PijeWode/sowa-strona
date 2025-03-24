@@ -492,7 +492,7 @@
             <div id="instructions">
                 <p><strong>Cel:</strong> Pomóż Sowie unikać przeszkód i zbieraj pióra mądrości!</p>
                 <p><strong>Sterowanie:</strong> Użyj myszy do przeciągania Sowy lub klawiszy strzałek/WASD do poruszania się.</p>
-                <p><strong>Specjalne przedmioty:</strong> Tarcza Wiedzy zapewnia tymczasową tarczę.</p>
+                <p><strong>Specjalne przedmioty:</strong> Złote pióra zapewniają tymczasową tarczę.</p>
                 <p><strong>Wskrzeszenie:</strong> Po rozbiciu się, odpowiedz poprawnie na pytanie, aby kontynuować.</p>
             </div>
             <button id="start-button" class="game-button">Rozpocznij Grę</button>
@@ -963,26 +963,29 @@
         ];
 
         const obstacleTextures = [
-            createPlaceholderTexture('#654321', 64), // Branch
-            createPlaceholderTexture('#708090', 64), // Cloud
-            createPlaceholderTexture('#36454F', 64), // Bat
+            new THREE.TextureLoader().load('branch.png', function(texture) {
+                texture.transparent = true;
+                texture.needsUpdate = true;
+            }),
+            new THREE.TextureLoader().load('cloud.png', function(texture) {
+                texture.transparent = true;
+                texture.needsUpdate = true;
+            }),
+            new THREE.TextureLoader().load('bat.png', function(texture) {
+                texture.transparent = true;
+                texture.needsUpdate = true;
+            }),
             new THREE.TextureLoader().load('fox.png', function(texture) {
                 texture.transparent = true;
                 texture.needsUpdate = true;
-            }, undefined, function(error) {
-                console.error('Error loading fox texture:', error);
             }),
             new THREE.TextureLoader().load('eagle.png', function(texture) {
                 texture.transparent = true;
                 texture.needsUpdate = true;
-            }, undefined, function(error) {
-                console.error('Error loading eagle texture:', error);
             }),
             new THREE.TextureLoader().load('raccon.png', function(texture) {
                 texture.transparent = true;
                 texture.needsUpdate = true;
-            }, undefined, function(error) {
-                console.error('Error loading raccoon texture:', error);
             })
         ];
 
@@ -1448,8 +1451,13 @@
             const size = Math.random() * (maxSize - minSize) + minSize;
             const textureIndex = Math.floor(Math.random() * obstacleTextures.length);
             
-            // Make fox, eagle, and raccoon obstacles larger
-            const finalSize = (textureIndex === 3 || textureIndex === 4 || textureIndex === 5) ? size * 2.5 : size; // Fox is at index 3, Eagle at index 4, Raccoon at index 5
+            // Make clouds and other specific obstacles larger
+            let finalSize = size;
+            if (textureIndex === 1) { // Cloud texture is at index 1
+                finalSize = size * 4; // Make clouds 4 times larger
+            } else if (textureIndex === 3 || textureIndex === 4 || textureIndex === 5) {
+                finalSize = size * 2.5; // Keep fox, eagle, and raccoon at their current size
+            }
             
             const geometry = new THREE.PlaneGeometry(finalSize, finalSize);
             const material = new THREE.MeshBasicMaterial({ 
@@ -1631,6 +1639,27 @@
                     gameState.shieldActive = true;
                     gameState.shieldEndTime = Date.now() + config.shieldDuration;
                     
+                    // Remove old shield animation code and replace with player animation
+                    const startTime = Date.now();
+                    const animatePlayerShield = () => {
+                        if (!gameState.shieldActive) return;
+                        
+                        const elapsed = (Date.now() - startTime) % 1000; // 1000ms cycle
+                        const progress = elapsed / 1000;
+                        
+                        // Scale the player mesh in a pulsing pattern
+                        const scale = 1 + Math.sin(progress * Math.PI * 2) * 0.2;
+                        playerMesh.scale.set(scale, scale, 1);
+                        
+                        requestAnimationFrame(animatePlayerShield);
+                    };
+                    animatePlayerShield();
+                    
+                    // Reset player scale when shield ends
+                    setTimeout(() => {
+                        playerMesh.scale.set(1, 1, 1);
+                    }, config.shieldDuration);
+                    
                     // Show shield UI elements
                     document.getElementById('shield-active').style.display = 'block';
                     document.getElementById('shield-timer').style.display = 'block';
@@ -1701,6 +1730,7 @@
                     document.getElementById('shield-active').style.display = 'none';
                     document.getElementById('shield-timer').style.display = 'none';
                     document.getElementById('shield-timer-fill').style.width = '0%';
+                    playerMesh.scale.set(1, 1, 1); // Reset player scale when shield ends
                 } else {
                     // Update timer fill width based on remaining time
                     const fillWidth = (remainingTime / config.shieldDuration) * 100;
